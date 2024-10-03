@@ -1,0 +1,144 @@
+# GitHub Pull Request filters:
+# https://docs.github.com/en/search-github/searching-on-github/searching-issues-and-pull-requests
+prSections:
+- title: Spack Review required
+  # Filter open spack PRs that require review and are not a failure:
+  filters:
+    # Not reviewed
+    # Not assigned
+    # CI Check status != Failure
+    # Not reviewed by @me
+    # Review many not be: Changes Requested:
+    # No label indicates that the PR is waiting
+    repo:spack/spack
+    review:required
+    no:assignee
+    is:open
+    -status:failure
+    -label:"changes requested"
+    -label:waiting-on-maintainer
+    -label:waiting-on-reviewers
+    -label:waiting-on-dependency
+    -label:question
+- title: Spack PRs for auto-merge
+  # Filter open spack PRs that don't have requested changes and are not a failure:
+  filters:
+    # CI Check status != Failure
+    # Not reviewed by @me
+    # Review many not be: Changes Requested:
+    # No label indicates that the PR is waiting
+    repo:spack/spack
+    is:open
+    -status:failure
+    -reviewed-by:@me
+    -review:changes_requested
+    -label:"changes requested"
+    -label:waiting-on-maintainer
+    -label:waiting-on-reviewers
+    -label:waiting-on-dependency
+    -label:question
+    # Other example filter conditions
+    # - Filter PRs not reviewed yet
+    #   review:required
+    # - Filter PRs on the amount of comments on the PR
+    #   comments:0..3
+- title: Failed Spack PRs
+  filters:
+    # CI Check status == Failure
+    # Not reviewed by @me
+    # Review many not be: Changes Requested
+    # No label indicates that the PR is waiting
+    repo:spack/spack
+    is:open
+    status:failure
+    -reviewed-by:@me
+    -review:changes_requested
+    -label:waiting-on-maintainer
+    -label:waiting-on-reviewers
+    -label:waiting-on-dependency
+    -label:question
+  type: null
+- title: Needs My Review
+  filters: is:open review-requested:@me
+  type: null
+- title: Involved
+  filters: is:open involves:@me -author:@me
+  type: null
+issuesSections:
+- title: My Issues
+  filters: is:open author:@me
+- title: Assigned
+  filters: is:open assignee:@me
+- title: Involved
+  filters: is:open involves:@me -author:@me
+defaults:
+  preview:
+    open: true
+    width: 50
+  prsLimit: 20
+  issuesLimit: 20
+  view: prs
+  layout:
+    prs:
+      updatedAt:
+        width: 5
+      repo:
+        width: 5
+        hidden: true
+      title:
+        width: 40
+      base:
+        width: 15
+        hidden: true
+      lines:
+        width: 15
+    issues:
+      updatedAt:
+        width: 5
+      repo:
+        width: 15
+  refetchIntervalMinutes: 30
+keybindings:
+  universal: []
+  issues: []
+  prs:
+    - key: b
+      command: >
+        cd {{.RepoPath}} &&
+        TTY=$(tty|tr / -) CURRENT_BRANCH="$(git branch --show-current)" bash -uc '
+          git checkout -b $CURRENT_BRANCH-gh-dash-$TTY-$$ &&
+          git commit -n --allow-empty -m "dash index before reviewing {{.PrNumber}}/{{.HeadRefName}}" &&
+          git commit -n --allow-empty -am "dash work before reviewing {{.PrNumber}}/{{.HeadRefName}}" &&
+          gh pr checkout {{.PrNumber}} || {
+            echo "gh pr checkout {{.PrNumber}} failed"
+            git checkout $CURRENT_BRANCH
+            git branch -D $CURRENT_BRANCH-gh-dash-$TTY-$$
+            sleep 15
+            exit 1
+          } &&
+          git log --oneline --graph --decorate --all -n 10 &&
+          PR={{.PrNumber}} debian_chroot="{{.PrNumber}}:{{.HeadRefName}}" bash -i
+          git checkout $CURRENT_BRANCH-gh-dash-$TTY-$$ &&
+          git reset --mixed HEAD~1 &&
+          git reset --soft HEAD~1 &&
+          git checkout $CURRENT_BRANCH &&
+          git branch -D $CURRENT_BRANCH-gh-dash-$TTY-$$ || {
+            echo "restoring previous branch state from $CURRENT_BRANCH-gh-dash-$TTY-$$ failed"
+            sleep 5
+            exit 1
+          }
+        '
+repoPaths:
+  # User-specific configuration:
+  # Configure gh-dash to expect spack to be installed in ~/spack:
+  # This sets {{.RepoPath}}, which is used in the example key bindings above:
+  spack/spack: ~/spack
+theme:
+  ui:
+    sectionsShowCount: true
+    table:
+      showSeparator: true
+      compact: false
+pager:
+  diff: ""
+confirmQuit: false

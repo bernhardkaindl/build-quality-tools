@@ -1,0 +1,132 @@
+#
+# This is the configuration file of the pre-commit framework for this repository:
+# https://pypi.org/project/pre-commit
+#
+# pre-commit runs in the GitHub Workflow of this project on each push and PR.
+# Additionally, you can run it locally for faster fixing of issues using
+# $ pip3 install pre-commit -r requirements-dev.txt
+#
+# On the initial run, pre-commit downloads its checkers, subsequent runs are fast:
+#
+# $ pre-commit run    # automatically checks which checks are needed.
+# $ pre-commit run -a # runs all fixes and checks, even when not needed
+#
+# When this works, you can enable it as the pre-commit hook for this git clone:
+# $ pre-commit install
+# $ pre-commit install --hook-type pre-push
+#
+# You can skip checks if you commit very often you don't want them to run, e.g:
+# export SKIP=m.pylint;git commit -m "quick save" (or for --amend)
+#
+# For more customizations, see https://pre-commit.com/#temporarily-disabling-hooks
+# and https://pre-commit.com/#confining-hooks-to-run-at-certain-stages (e.g push)
+#
+# After this, the pre-commit fixes and checks run when you commit an update.
+#
+# You can also automatically set pre-commit as pre-commit hook for new git clones:
+# $ git config --global init.templateDir ~/.git-template
+# $ pre-commit init-templatedir ~/.git-template
+#
+# Further information:
+# https://pre-commit.com/#automatically-enabling-pre-commit-on-repositories
+# All hooks: https://pre-commit.com/hooks.html
+fail_fast: false
+default_stages: [commit, push]
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    # https://github.com/pre-commit/pre-commit-hooks/blob/main/README.md:
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: mixed-line-ending
+        args: ['--fix=lf']
+    -   id: check-added-large-files
+        args: ['--maxkb=20']
+    -   id: check-executables-have-shebangs
+    -   id: debug-statements
+    -   id: check-shebang-scripts-are-executable
+    -   id: check-merge-conflict
+    -   id: check-yaml
+
+-   repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+    -   id: autoflake
+        args: ["--in-place", "--remove-unused-variables", "--remove-all-unused-imports"]
+        language: python
+        files: \.py$
+
+-   repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+    -   id: black
+        args: [--safe, --quiet]
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+    -   id: mypy
+        name: Run mypy
+        additional_dependencies:
+        - pexpect
+
+-   repo: https://github.com/pylint-dev/pylint
+    rev: v3.3.1
+    hooks:
+    -   id: pylint
+        additional_dependencies:
+        - pexpect
+
+-   repo: local
+    hooks:
+    -   id: git-diff
+        name: Show not staged changes (fixups may make them too)
+        entry: git diff --exit-code
+        language: system
+        pass_filenames: false
+        always_run: true
+
+-   repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+    -   id: shellcheck
+
+-   repo: https://github.com/openstack/bashate
+    rev: 2.1.1
+    hooks:
+    -   id: bashate
+
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.42.0
+  hooks:
+  - id: markdownlint
+
+-   repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.383
+    hooks:
+    -   id: pyright
+        name: Run pyright
+        additional_dependencies: [pexpect]
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.3.0
+  hooks:
+  - id: codespell
+    additional_dependencies:
+      - tomli
+
+-   repo: https://github.com/xenserver-next/pre-commit-pytype
+    rev: '2024.09.13'
+    hooks:
+    -   id: pytype
+        # Note: Pytype does not support Python 3.12 yet:
+        # https://google.github.io/pytype/support.html
+        #
+        # If your pre-commit has been installed in a Python3.12 environment,
+        # you need to uncomment the next line to run pytype in a Python3.10 environment:
+        # that also the GitHub Action currently uses:
+        # language_version: "3.10"
+        name: Run pytype
+        additional_dependencies: [pexpect]
+        args: ['build_pr_changes.py']
